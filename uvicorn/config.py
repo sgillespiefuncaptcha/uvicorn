@@ -165,7 +165,7 @@ class Config:
         self.limit_max_requests = limit_max_requests
         self.backlog = backlog
         self.timeout_keep_alive = timeout_keep_alive
-        self.timeout_notify = timeout_notify
+        self.timeout_notify = 1
         self.callback_notify = callback_notify
         self.ssl_keyfile = ssl_keyfile
         self.ssl_certfile = ssl_certfile
