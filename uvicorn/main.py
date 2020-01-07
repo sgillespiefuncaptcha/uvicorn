@@ -381,7 +381,7 @@ class Server:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.serve(sockets=sockets))
 
-    async def serve(self, sockets=None):
+    async def serve(self, sockets=None, parent_worker=None):
         process_id = os.getpid()
 
         config = self.config
@@ -399,7 +399,7 @@ class Server:
         await self.startup(sockets=sockets)
         if self.should_exit:
             return
-        await self.main_loop()
+        await self.main_loop(parent_worker)
         await self.shutdown(sockets=sockets)
 
         message = "Finished server process [%d]"
@@ -490,14 +490,17 @@ class Server:
         else:
             self.started = True
 
-    async def main_loop(self):
+    async def main_loop(self, parent_worker=None):
         counter = 0
         should_exit = await self.on_tick(counter)
         while not should_exit:
+            if parent_worker is not None:
+                parent_worker.notify()
             counter += 1
             counter = counter % 864000
             await asyncio.sleep(0.1)
             should_exit = await self.on_tick(counter)
+
 
     async def on_tick(self, counter) -> bool:
         # Update the default headers, once per second.
