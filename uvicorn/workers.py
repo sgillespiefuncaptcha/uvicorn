@@ -64,6 +64,7 @@ class UvicornWorker(Worker):
         server = Server(config=self.config)
         loop = asyncio.get_event_loop()
         loop.run_until_complete(server.serve(sockets=self.sockets))
+        self.notify()
 
     async def callback_notify(self):
         self.notify()
