@@ -505,14 +505,14 @@ class Server:
         if self.config.callback_notify is None:
             self.config.callback_notify = 1
 
+        current_time = time.time()
+        current_date = formatdate(current_time, usegmt=True).encode()
         if current_time - self.last_notified > self.config.timeout_notify:
             self.last_notified = current_time
             await self.config.callback_notify()
 
         # Update the default headers, once per second.
         if counter % 10 == 0:
-            current_time = time.time()
-            current_date = formatdate(current_time, usegmt=True).encode()
             self.server_state.default_headers = [
                 (b"date", current_date)
             ] + self.config.encoded_headers
