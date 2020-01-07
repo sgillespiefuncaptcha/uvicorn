@@ -399,7 +399,7 @@ class Server:
         await self.startup(sockets=sockets)
         if self.should_exit:
             return
-        await self.main_loop(parent_worker)
+        await self.main_loop()
         await self.shutdown(sockets=sockets)
 
         message = "Finished server process [%d]"
@@ -490,12 +490,10 @@ class Server:
         else:
             self.started = True
 
-    async def main_loop(self, parent_worker=None):
+    async def main_loop(self):
         counter = 0
         should_exit = await self.on_tick(counter)
         while not should_exit:
-            if parent_worker is not None:
-                parent_worker.notify()
             counter += 1
             counter = counter % 864000
             await asyncio.sleep(0.1)
@@ -503,6 +501,14 @@ class Server:
 
 
     async def on_tick(self, counter) -> bool:
+        # Callback to `callback_notify` once every `timeout_notify` seconds.
+        if self.config.callback_notify is None:
+            self.config.callback_notify = 1
+
+        if current_time - self.last_notified > self.config.timeout_notify:
+            self.last_notified = current_time
+            await self.config.callback_notify()
+
         # Update the default headers, once per second.
         if counter % 10 == 0:
             current_time = time.time()
@@ -510,12 +516,6 @@ class Server:
             self.server_state.default_headers = [
                 (b"date", current_date)
             ] + self.config.encoded_headers
-
-            # Callback to `callback_notify` once every `timeout_notify` seconds.
-            if self.config.callback_notify is not None:
-                if current_time - self.last_notified > self.config.timeout_notify:
-                    self.last_notified = current_time
-                    await self.config.callback_notify()
 
         # Determine if we should exit.
         if self.should_exit:
